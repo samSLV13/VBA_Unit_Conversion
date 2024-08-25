@@ -1,5 +1,7 @@
 Sub Worksheet_Change(ByVal Target As Range)
     
+    On Error GoTo ExitProcess 'If any error happens, ensures events are enabled again
+    
     'Changed value debug print
     Debug.Print ("Target = " & Target)
     
@@ -8,7 +10,7 @@ Sub Worksheet_Change(ByVal Target As Range)
     Variable_Name = Get_Last_Cell_Value(Target:=Target)
     Debug.Print ("Variable_Name = " & Variable_Name)
 
-    If Variable_Name = "" Then
+    If Trim(Variable_Name) = "" Then
         Debug.Print ("Early exit due to empty Variable_Name")
         Exit Sub
     End If
@@ -42,7 +44,7 @@ Sub Worksheet_Change(ByVal Target As Range)
         
     
     'Application.EnableEvents = False 'Prevents code doesnt trigger itself when updating cells, prevents recursion
-    'On Error GoTo ExitProcess 'If any error happens, ensures events are enabled again
+    '
     
     
     
@@ -57,8 +59,8 @@ Sub Worksheet_Change(ByVal Target As Range)
     '    End If
     'End If
         
-'ExitProcess:
-    'Application.EnableEvents = True
+ExitProcess:
+    Application.EnableEvents = True
         
 End Sub
 
@@ -92,5 +94,3 @@ End Function
 Function Get_Underscore_Position(Sheet_Name As String) As Integer
     Get_Underscore_Position = InStr(1, Sheet_Name, "_")
 End Function
-
-
