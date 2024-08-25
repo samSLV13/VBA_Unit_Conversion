@@ -24,6 +24,25 @@ Sub Worksheet_Change(ByVal Target As Range)
     Conversion_Unit = Target.Offset(0, 3).Value
     Debug.Print ("Conversion_Unit = " & Conversion_Unit)
 
+    'Get Origin Value from Target change
+    Dim Origin_Value As Double
+    Origin_Value = Target
+    Debug.Print ("Origin_Value = " & Origin_Value)
+
+    'Get Conversion factor from Catalog Sheet
+    Dim Conversion_Factor As Double
+    Conversion_Factor = Get_Conversion_Factor(Origin_Unit:=Origin_Unit, Conversion_Unit:=Conversion_Unit)
+    Debug.Print ("Conversion_Factor = " & Conversion_Factor)
+
+    'Calculate Conversion Value
+    Dim Conversion_Value As Double
+    Conversion_Value = Origin_Value * Conversion_Factor
+    Debug.Print ("Conversion_Value = " & Conversion_Value)
+
+    'Update Conversion Value in Target change
+    Target.Offset(0, 4).Value = Conversion_Value
+    Debug.Print ("Conversion_Value updated in Target.Offset(0, 4) = " & Target.Offset(0, 4).Value)
+    
     'Get the sheet name where changed was triggered
     Dim Current_Sheet_Name As String
     Current_Sheet_Name = Get_Sheet_Name(ws:=Me)
@@ -66,23 +85,6 @@ Next_Iteration:
         Debug.Print ("")
     Next ws
         
-    
-    '
-    '
-    
-    
-    
-    'Verify if value changed in C3 or E3 individually
-    'If Not Intersect(Target, Me.Range("C3")) Is Nothing Then
-    '    If IsNumeric(Me.Range("C3").Value) Then
-    '        Me.Range("E3").Value = Me.Range("C3").Value / 25.4 'Convert mm to in, then update E3 cell
-    '    End If
-    'ElseIf Not Intersect(Target, Me.Range("E3")) Is Nothing Then
-    '    If IsNumeric(Me.Range("E3").Value) Then
-    '        Me.Range("C3").Value = Me.Range("E3").Value * 25.4 'Convert in to mm, then update C3
-    '    End If
-    'End If
-        
 ExitProcess:
     Application.EnableEvents = True
         
@@ -119,3 +121,24 @@ Function Get_Underscore_Position(Sheet_Name As String) As Integer
     Get_Underscore_Position = InStr(1, Sheet_Name, "_")
 End Function
 
+Function Get_Conversion_Factor(Origin_Unit As String, Conversion_Unit As String) As Double
+    Dim ws As Worksheet
+    Set ws = ThisWorkbook.Sheets("UnitsCatalog")
+    'Extract the catalog as an array
+    Dim Catalog() As Variant
+    Catalog = Extract_Array(Sheet_Name:="UnitsCatalog", Initial_Row:=1, Initial_Column:="A", Last_Column:="D", Number_Columns:=4)
+    Debug.Print ("stop")
+End Function
+
+Function Extract_Array(Sheet_Name As String, Initial_Row As Long, Initial_Column As String, Last_Column As String, Number_Columns As Long) As Variant
+    Dim ws As Worksheet
+    Set ws = ThisWorkbook.Sheets(Sheet_Name)
+
+    Dim Last_Cell As Long
+    Last_Cell = ws.Cells(Initial_Row, Initial_Column).End(xlDown).Row
+
+    Dim Aux_Array() As Variant
+    ReDim Aux_Array(1 To Last_Cell, 1 To Number_Columns)
+    Aux_Array = ws.Range(ws.Cells(Initial_Row, Initial_Column), ws.Cells(Last_Cell, Last_Column)).Value
+    Extract_Array = Aux_Array
+End Function
