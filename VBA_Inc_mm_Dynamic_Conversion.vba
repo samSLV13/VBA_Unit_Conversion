@@ -1,6 +1,7 @@
 Sub Worksheet_Change(ByVal Target As Range)
     
-    On Error GoTo ExitProcess 'If any error happens, ensures events are enabled again
+    'If any error happens, ensures events are enabled again
+    On Error GoTo ExitProcess
     
     'Changed value debug print
     Debug.Print ("Target = " & Target)
@@ -10,27 +11,36 @@ Sub Worksheet_Change(ByVal Target As Range)
     Variable_Name = Get_Last_Cell_Value(Target:=Target)
     Debug.Print ("Variable_Name = " & Variable_Name)
 
-    If Trim(Variable_Name) = "" Then
-        Debug.Print ("Early exit due to empty Variable_Name")
-        Exit Sub
-    End If
+    'Exit early if the row of the changed value doesnt have a string to assign as variable_name
+    If Trim(Variable_Name) = "" Then Debug.Print ("Early exit due to empty Variable_Name"): Exit Sub
 
-    Dim Current_Sheet_Name As String
-    Dim Current_Sheet_Prefix  As String
-    
+    'Get Origin Unit from Target change
+    Dim Origin_Unit As String
+    Origin_Unit = Target.Offset(0, 1).Value
+    Debug.Print ("Origin_Unit = " & Origin_Unit)
+
+    'Get Conversion Unit from Target change
+    Dim Conversion_Unit As String
+    Conversion_Unit = Target.Offset(0, 3).Value
+    Debug.Print ("Conversion_Unit = " & Conversion_Unit)
+
     'Get the sheet name where changed was triggered
+    Dim Current_Sheet_Name As String
     Current_Sheet_Name = Get_Sheet_Name(ws:=Me)
     Debug.Print ("Current_Sheet_Name = " & Current_Sheet_Name)
     
     'Get the sheet prefix, will be used to group sheets with the same prefix
+    Dim Current_Sheet_Prefix  As String
     Current_Sheet_Prefix = Get_Prefix_Sheet_Name(Sheet_Name:=Current_Sheet_Name)
     Debug.Print ("Current_Sheet_Prefix = " & Current_Sheet_Prefix)
     
     Debug.Print ("")
     
+    'Process value in each sheet from Workbook
+    Debug.Print ("Start iterating sheets...")
+    Debug.Print ("")
     Dim ws As Worksheet
-    Dim Iterated_Sheet_Name As String
-    Dim Iterated_Sheet_Prefix As String
+    Dim Iterated_Sheet_Name As String, Iterated_Sheet_Prefix As String
     For Each ws In ThisWorkbook.Worksheets
         Iterated_Sheet_Name = Get_Sheet_Name(ws:=ws)
         Debug.Print ("Iterated_Sheet_Name = " & Iterated_Sheet_Name)
@@ -38,12 +48,26 @@ Sub Worksheet_Change(ByVal Target As Range)
         Iterated_Sheet_Prefix = Get_Prefix_Sheet_Name(Sheet_Name:=Iterated_Sheet_Name)
         Debug.Print ("Iterated_Sheet_Prefix = " & Iterated_Sheet_Prefix)
         
-        
+        If Iterated_Sheet_Prefix <> Current_Sheet_Prefix Then GoTo Next_Iteration
+
+        Dim Found_Cell As Range
+        Set Found_Cell = ws.Range("A1:Z100").Find(What:=Variable_Name, LookIn:=xlValues, LookAt:=xlWhole, SearchOrder:=xlByColumns, SearchDirection:=xlNext, MatchCase:=False, SearchFormat:=False)
+        If Found_Cell Is Nothing Then GoTo Next_Iteration
+        Debug.Print ("Found_Cell = " & Found_Cell.Address)
+
+        Dim Found_Cell_Value As String
+        Dim Found_Cell_Column As Integer
+        Found_Cell_Column = Found_Cell.Column
+        Found_Cell_Value = ws.Cells(Found_Cell.Row, Found_Cell_Column + 1).Value
+        Debug.Print ("Found_Cell_Value = " & Found_Cell_Value)
+
+Next_Iteration:
+
         Debug.Print ("")
     Next ws
         
     
-    'Application.EnableEvents = False 'Prevents code doesnt trigger itself when updating cells, prevents recursion
+    '
     '
     
     
@@ -94,3 +118,4 @@ End Function
 Function Get_Underscore_Position(Sheet_Name As String) As Integer
     Get_Underscore_Position = InStr(1, Sheet_Name, "_")
 End Function
+
