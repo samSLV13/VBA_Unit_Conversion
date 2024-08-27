@@ -1,6 +1,7 @@
 Sub Worksheet_Change(ByVal Target As Range)
     
     'If any error happens, ensures events are enabled again
+    Application.EnableEvents = False
     On Error GoTo ExitProcess
     
     'Changed value debug print
@@ -19,7 +20,7 @@ Sub Worksheet_Change(ByVal Target As Range)
     Origin_Unit = Target.Offset(0, 1).Value
     Debug.Print ("Origin_Unit = " & Origin_Unit)
 
-    'Get Conversion Unit from Target change
+    'Get Conversion Factor from Target change
     Dim Conversion_Unit As String
     Conversion_Unit = Target.Offset(0, 3).Value
     Debug.Print ("Conversion_Unit = " & Conversion_Unit)
@@ -33,6 +34,8 @@ Sub Worksheet_Change(ByVal Target As Range)
     Dim Conversion_Factor As Double
     Conversion_Factor = Get_Conversion_Factor(Origin_Unit:=Origin_Unit, Conversion_Unit:=Conversion_Unit)
     Debug.Print ("Conversion_Factor = " & Conversion_Factor)
+    
+    'Get Conversion Operation from Catalog Sheet
 
     'Calculate Conversion Value
     Dim Conversion_Value As Double
@@ -70,10 +73,10 @@ Sub Worksheet_Change(ByVal Target As Range)
         If Iterated_Sheet_Prefix <> Current_Sheet_Prefix Then GoTo Next_Iteration
 
         Dim Found_Cell As Range
-        Set Found_Cell = ws.Range("A1:Z100").Find(What:=Variable_Name, LookIn:=xlValues, LookAt:=xlWhole, SearchOrder:=xlByColumns, SearchDirection:=xlNext, MatchCase:=False, SearchFormat:=False)
+        Set Found_Cell = ws.Range("A1:Z100").Find(What:=Variable_Name, LookIn:=xlValues, LookAt:=xlWhole)
         If Found_Cell Is Nothing Then GoTo Next_Iteration
         Debug.Print ("Found_Cell = " & Found_Cell.Address)
-
+        
         Dim Found_Cell_Value As String
         Dim Found_Cell_Column As Integer
         Found_Cell_Column = Found_Cell.Column
@@ -84,7 +87,7 @@ Next_Iteration:
 
         Debug.Print ("")
     Next ws
-        
+
 ExitProcess:
     Application.EnableEvents = True
         
@@ -124,10 +127,14 @@ End Function
 Function Get_Conversion_Factor(Origin_Unit As String, Conversion_Unit As String) As Double
     Dim ws As Worksheet
     Set ws = ThisWorkbook.Sheets("UnitsCatalog")
-    'Extract the catalog as an array
+
     Dim Catalog() As Variant
     Catalog = Extract_Array(Sheet_Name:="UnitsCatalog", Initial_Row:=1, Initial_Column:="A", Last_Column:="D", Number_Columns:=4)
-    Debug.Print ("stop")
+    
+    Dim i As Long
+    For i = LBound(Catalog) To UBound(Catalog)
+        If Catalog(i, 1) = Origin_Unit And Catalog(i, 2) = Conversion_Unit Then Get_Conversion_Factor = Catalog(i, 4): Exit Function
+    Next i
 End Function
 
 Function Extract_Array(Sheet_Name As String, Initial_Row As Long, Initial_Column As String, Last_Column As String, Number_Columns As Long) As Variant
@@ -142,3 +149,4 @@ Function Extract_Array(Sheet_Name As String, Initial_Row As Long, Initial_Column
     Aux_Array = ws.Range(ws.Cells(Initial_Row, Initial_Column), ws.Cells(Last_Cell, Last_Column)).Value
     Extract_Array = Aux_Array
 End Function
+
